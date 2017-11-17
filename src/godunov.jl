@@ -563,6 +563,82 @@ function solveModel(vessels, heart :: Heart, edge_list,
   end
 end
 
+# function solveModel(vessels, heart :: Heart, edge_list,
+#                     blood :: Blood, dt :: Float64, current_time :: Float64)
+#
+#     solveVessel(edge_list, 1, vessels, heart, blood, dt, current_time)
+#     edge_list[:,4] = zeros(size(edge_list)[1])
+# end
+
+function solveVessel(edge_list, j, vessels, heart :: Heart, blood :: Blood, dt :: Float64,
+                    current_time :: Float64)
+    i = edge_list[j,1]
+    s = edge_list[j,2]
+    t = edge_list[j,3]
+    v = vessels[j]
+
+    if size(find(edge_list[:,3] .== s))[1] == 0
+      openBF.setInletBC(current_time, dt, v, heart)
+    #   println("Inlet vessel #$i")
+    #   dosomething(1e1)
+    end
+
+    # println("Solve vessel #$i")
+    openBF.MUSCL(v, dt, blood)
+    # dosomething(1e8)
+    edge_list[j, 4] = 1
+
+    if size(find(edge_list[:,2] .== t))[1] == 0
+      openBF.setOutletBC(dt, v)
+    #   println("Outlet vessel #$i - Compute outlet BC")
+    #   dosomething(1e4)
+      return 0
+
+    elseif size(find(edge_list[:,2] .== t))[1] == 2
+      d1_i = find(edge_list[:,2] .== t)[1]
+      d2_i = find(edge_list[:,2] .== t)[2]
+
+      openBF.joinVessels(blood, v, vessels[d1_i], vessels[d2_i])
+    #   println("Bifurcation at node $t between vessels $i, $d1_i, and $d2_i")
+    #   dosomething(1e3)
+
+      a = @spawn solveVessel(edge_list, d1_i, vessels, heart, blood, dt, current_time)
+      a1 = solveVessel(edge_list, d2_i, vessels, heart, blood, dt, current_time)
+
+      fetch(a)
+
+    elseif size(find(edge_list[:,3] .== t))[1] == 1
+      d_i = find(edge_list[:,2] .== t)[1]
+
+      openBF.joinVessels(blood, v, vessels[d_i])
+    #   println("Junction at node $t between vessels $i and $d_i")
+    #   dosomething(1e2)
+
+      a = solveVessel(edge_list, d_i, vessels, heart, blood, dt, current_time)
+
+    elseif size(find(edge_list[:,3] .== t))[1] == 2
+      p1_i = find(edge_list[:,3] .== t)[1]
+      p2_i = find(edge_list[:,3] .== t)[2]
+    #   println("Convergin vessels solved?", vessels[p1_i], " ", vessels[p2_i])
+      if edge_list[p1_i, 4] + edge_list[p2_i, 4] == 2
+
+    #   if maximum([p1_i, p2_i]) == i
+        # p2_i = minimum([p1_i, p2_i])
+        d = find(edge_list[:,2] .== t)[1]
+        if edge_list[d, 4] == 1
+            return 0
+        end
+
+        openBF.solveAnastomosis(vessels[p1_i], vessels[p2_i], vessels[d])
+        # println("Anastomosis at node $t between vessels $i, $p2_i, and $d")
+        # dosomething(1e3)
+
+        a = solveVessel(edge_list, d, vessels, heart, blood, dt, current_time)
+      end
+      return 0
+    end
+end
+
 # ### References
 #
 # [^1]: Toro, Eleuterio F. Riemann solvers and numerical methods for fluid

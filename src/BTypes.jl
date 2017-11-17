@@ -126,7 +126,7 @@ export Vessel, Heart, Blood
 # --------------------------------------------------------------------
 # <a name="Vessel"></a>
 type Vessel
-  label :: String
+  label :: SubString{String}
 
   #Topological notation
   ID :: Int64

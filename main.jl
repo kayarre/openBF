@@ -89,9 +89,8 @@ heart, blood_prop, total_time = openBF.loadGlobalConstants(project_name,
 # is the `grafo` structure. `vessels` collection is filled by using
 # [`initialiseVessel`](initialise.html#initialiseVessel). The first
 # vessel is inserted by hand.
-vessels = [openBF.initialiseVessel(model[1,:], 1, heart, blood_prop,
-  initial_pressure, Ccfl)]
-edge_list = zeros(Int8, length(model[:,1]), 3)
+vessels = [openBF.initialiseVessel(model[1,:], 1, heart, blood_prop, initial_pressure, Ccfl)]
+edge_list = SharedArray{Int8}(zeros(Int8, length(model[:,1]), 4))
 edge_list[1,1] = vessels[1].ID
 edge_list[1,2] = vessels[1].sn
 edge_list[1,3] = vessels[1].tn
