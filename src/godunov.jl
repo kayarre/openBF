@@ -1,19 +1,17 @@
-#= Copyright (C) 2017 Alessandro Melis.
+#=
+Copyright 2017 INSIGNEO Institute for in silico Medicine
 
-  This file is part of openBF.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
+   http://www.apache.org/licenses/LICENSE-2.0
 
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with openBF.  If not, see <http://www.gnu.org/licenses/>.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 =#
 
 # 1D blood flow within elastic vessels is ruled by a system of hyperbolic
@@ -517,58 +515,58 @@ end
 #
 # ----------------------------------------------------------------------------
 # <a name="solveModel"></a>
-function solveModel(vessels, heart :: Heart, edge_list,
-                    blood :: Blood, dt :: Float64, current_time :: Float64)
-
-  for j in 1:size(edge_list)[1]
-    i = edge_list[j,1]
-    s = edge_list[j,2]
-    t = edge_list[j,3]
-    v = vessels[i]
-    lbl = v.label
-
-    if size(find(edge_list[:,3] .== s))[1] == 0
-      openBF.setInletBC(current_time, dt, v, heart)
-    end
-
-    openBF.MUSCL(v, dt, blood)
-
-    if size(find(edge_list[:,2] .== t))[1] == 0
-      openBF.setOutletBC(dt, v)
-      # println("\t Outlet vessel - Compute outlet BC")
-
-    elseif size(find(edge_list[:,2] .== t))[1] == 2
-      d1_i = find(edge_list[:,2] .== t)[1]
-      d2_i = find(edge_list[:,2] .== t)[2]
-
-      openBF.joinVessels(blood, v, vessels[d1_i], vessels[d2_i])
-      # println("\t\t Bifurcation at node $t between vessels $i, $d1_i, and $d2_i")
-
-    elseif size(find(edge_list[:,3] .== t))[1] == 1
-      d_i = find(edge_list[:,2] .== t)[1]
-
-      openBF.joinVessels(blood, v, vessels[d_i])
-      # println("\t\t Junction at node $t between vessels $i and $d_i")
-
-    elseif size(find(edge_list[:,3] .== t))[1] == 2
-      p1_i = find(edge_list[:,3] .== t)[1]
-      p2_i = find(edge_list[:,3] .== t)[2]
-      if maximum([p1_i, p2_i]) == i
-        p2_i = minimum([p1_i, p2_i])
-        d = find(edge_list[:,2] .== t)[1]
-        openBF.solveAnastomosis(v, vessels[p2_i], vessels[d])
-        # println("\t\t Anastomosis at node $s between vessels $i, $p2_i, and $d")
-      end
-    end
-  end
-end
-
 # function solveModel(vessels, heart :: Heart, edge_list,
 #                     blood :: Blood, dt :: Float64, current_time :: Float64)
 #
-#     solveVessel(edge_list, 1, vessels, heart, blood, dt, current_time)
-#     edge_list[:,4] = zeros(size(edge_list)[1])
+#   for j in 1:size(edge_list)[1]
+#     i = edge_list[j,1]
+#     s = edge_list[j,2]
+#     t = edge_list[j,3]
+#     v = vessels[i]
+#     lbl = v.label
+#
+#     if size(find(edge_list[:,3] .== s))[1] == 0
+#       openBF.setInletBC(current_time, dt, v, heart)
+#     end
+#
+#     openBF.MUSCL(v, dt, blood)
+#
+#     if size(find(edge_list[:,2] .== t))[1] == 0
+#       openBF.setOutletBC(dt, v)
+#       # println("\t Outlet vessel - Compute outlet BC")
+#
+#     elseif size(find(edge_list[:,2] .== t))[1] == 2
+#       d1_i = find(edge_list[:,2] .== t)[1]
+#       d2_i = find(edge_list[:,2] .== t)[2]
+#
+#       openBF.joinVessels(blood, v, vessels[d1_i], vessels[d2_i])
+#       # println("\t\t Bifurcation at node $t between vessels $i, $d1_i, and $d2_i")
+#
+#     elseif size(find(edge_list[:,3] .== t))[1] == 1
+#       d_i = find(edge_list[:,2] .== t)[1]
+#
+#       openBF.joinVessels(blood, v, vessels[d_i])
+#       # println("\t\t Junction at node $t between vessels $i and $d_i")
+#
+#     elseif size(find(edge_list[:,3] .== t))[1] == 2
+#       p1_i = find(edge_list[:,3] .== t)[1]
+#       p2_i = find(edge_list[:,3] .== t)[2]
+#       if maximum([p1_i, p2_i]) == i
+#         p2_i = minimum([p1_i, p2_i])
+#         d = find(edge_list[:,2] .== t)[1]
+#         openBF.solveAnastomosis(v, vessels[p2_i], vessels[d])
+#         # println("\t\t Anastomosis at node $s between vessels $i, $p2_i, and $d")
+#       end
+#     end
+#   end
 # end
+
+function solveModel(vessels, heart :: Heart, edge_list,
+                    blood :: Blood, dt :: Float64, current_time :: Float64)
+
+    solveVessel(edge_list, 1, vessels, heart, blood, dt, current_time)
+    edge_list[:,4] = zeros(size(edge_list)[1])
+end
 
 function solveVessel(edge_list, j, vessels, heart :: Heart, blood :: Blood, dt :: Float64,
                     current_time :: Float64)
@@ -602,10 +600,10 @@ function solveVessel(edge_list, j, vessels, heart :: Heart, blood :: Blood, dt :
     #   println("Bifurcation at node $t between vessels $i, $d1_i, and $d2_i")
     #   dosomething(1e3)
 
-      a = @spawn solveVessel(edge_list, d1_i, vessels, heart, blood, dt, current_time)
-      a1 = solveVessel(edge_list, d2_i, vessels, heart, blood, dt, current_time)
+      a = @async solveVessel(edge_list, d1_i, vessels, heart, blood, dt, current_time)
+      a1 = @sync @spawn solveVessel(edge_list, d2_i, vessels, heart, blood, dt, current_time)
 
-      fetch(a)
+    #   fetch(a)
 
     elseif size(find(edge_list[:,3] .== t))[1] == 1
       d_i = find(edge_list[:,2] .== t)[1]
@@ -614,7 +612,7 @@ function solveVessel(edge_list, j, vessels, heart :: Heart, blood :: Blood, dt :
     #   println("Junction at node $t between vessels $i and $d_i")
     #   dosomething(1e2)
 
-      a = solveVessel(edge_list, d_i, vessels, heart, blood, dt, current_time)
+      a = @sync @spawn solveVessel(edge_list, d_i, vessels, heart, blood, dt, current_time)
 
     elseif size(find(edge_list[:,3] .== t))[1] == 2
       p1_i = find(edge_list[:,3] .== t)[1]
@@ -633,7 +631,7 @@ function solveVessel(edge_list, j, vessels, heart :: Heart, blood :: Blood, dt :
         # println("Anastomosis at node $t between vessels $i, $p2_i, and $d")
         # dosomething(1e3)
 
-        a = solveVessel(edge_list, d, vessels, heart, blood, dt, current_time)
+        a = @sync @spawn solveVessel(edge_list, d, vessels, heart, blood, dt, current_time)
       end
       return 0
     end
