@@ -67,8 +67,9 @@ function solveAnastomosis(v1 :: Vessel, v2 :: Vessel, v3 :: Vessel)
       break
     else
       U = U_new
-      W = calculateWstarBif(U, k)
-      F = calculateFofUBif(v1, v2, v3, U, k, W)
+      W = calculateWstarAn(U, k)
+      J = calculateJacobianAn(v1, v2, v3, U, k)
+      F = calculateFofUAn(v1, v2, v3, U, k, W)
     end
   end
 

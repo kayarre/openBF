@@ -99,22 +99,34 @@ function solveBifurcation(v1 :: Vessel, v2 :: Vessel, v3 :: Vessel)
 
   #Parameters vector
   k1 = sqrt(0.5*3*v1.gamma[end])
-  k2 = sqrt(0.5*3*v2.gamma[ 1 ])
-  k3 = sqrt(0.5*3*v3.gamma[ 1 ])
-  k = [k1, k2, k3]
+  k2 = sqrt(0.5*3*v2.gamma[1])
+  k3 = sqrt(0.5*3*v3.gamma[1])
+  k4 = 1/sqrt(v1.A0[end])
+  k5 = 1/sqrt(v2.A0[1])
+  k6 = 1/sqrt(v3.A0[1])
+  k7 = v1.beta[end]
+  k8 = v2.beta[1]
+  k9 = v3.beta[1]
 
-  W = calculateWstarBif(U, k)
-  J = calculateJacobianBif(v1, v2, v3, U, k)
-  F = calculateFofUBif(v1, v2, v3, U, k, W)
+  k = [k1, k2, k3, k4, k5, k6, k7, k8, k9]
+
+  J = calculateJacobianBif(U, k)
+  F = calculateFofUBif(U, k)
+
+  f_old = 0.5*dot(F,F)
 
   #Newton-Raphson
   nr_toll_U = 1e-5
   nr_toll_F = 1e-5
+  lambda_p = 1.0
 
   while true
     dU = J\(-F)
-    # U_new = U + 0.01*dU
-    U_new = U + dU
+
+    lambda_p = unew(U, dU, k, f_old)
+    U_new = U + lambda_p*dU
+    F = calculateFofUBif(U_new, k)
+    f_old = 0.5*dot(F,F)
 
     if any(isnan(dot(F,F)))
       println(F)
@@ -136,10 +148,99 @@ function solveBifurcation(v1 :: Vessel, v2 :: Vessel, v3 :: Vessel)
       break
     else
       U = U_new
-      W = calculateWstarBif(U, k)
-      F = calculateFofUBif(v1, v2, v3, U, k, W)
+      J = calculateJacobianBif(U, k)
+      F = calculateFofUBif(U, k)
     end
   end
+  # println(U)
+  #Update vessel quantities
+  v1.u[end] = U[1]
+  v2.u[ 1 ] = U[2]
+  v3.u[ 1 ] = U[3]
+
+  v1.A[end] = U[4]*U[4]*U[4]*U[4]
+  v2.A[ 1 ] = U[5]*U[5]*U[5]*U[5]
+  v3.A[ 1 ] = U[6]*U[6]*U[6]*U[6]
+
+  v1.Q[end] = v1.u[end]*v1.A[end]
+  v2.Q[ 1 ] = v2.u[ 1 ]*v2.A[ 1 ]
+  v3.Q[ 1 ] = v3.u[ 1 ]*v3.A[ 1 ]
+
+  v1.P[end] = pressure(v1.A[end], v1.A0[end], v1.beta[end], v1.Pext)
+  v2.P[ 1 ] = pressure(v2.A[ 1 ], v2.A0[ 1 ], v2.beta[ 1 ], v2.Pext)
+  v3.P[ 1 ] = pressure(v3.A[ 1 ], v3.A0[ 1 ], v3.beta[ 1 ], v3.Pext)
+
+  v1.c[end] = waveSpeed(v1.A[end], v1.gamma[end])
+  v2.c[ 1 ] = waveSpeed(v2.A[ 1 ], v2.gamma[ 1 ])
+  v3.c[ 1 ] = waveSpeed(v3.A[ 1 ], v3.gamma[ 1 ])
+
+end
+
+function solveBifurcation_bkp(v1 :: Vessel, v2 :: Vessel, v3 :: Vessel)
+
+  #Unknowns vector
+  U0 = [v1.u[end],
+       v2.u[ 1 ],
+       v3.u[ 1 ],
+       sqrt(sqrt(v1.A[end])),
+       sqrt(sqrt(v2.A[ 1 ])),
+       sqrt(sqrt(v3.A[ 1 ]))]
+
+  #Parameters vector
+  k1 = sqrt(0.5*3*v1.gamma[end])
+  k2 = sqrt(0.5*3*v2.gamma[1])
+  k3 = sqrt(0.5*3*v3.gamma[1])
+  k4 = 1/sqrt(v1.A0[end])
+  k5 = 1/sqrt(v2.A0[1])
+  k6 = 1/sqrt(v3.A0[1])
+  k7 = v1.beta[end]
+  k8 = v2.beta[1]
+  k9 = v3.beta[1]
+
+  k = [k1, k2, k3, k4, k5, k6, k7, k8, k9]
+
+  # J = calculateJacobianBif(U, k)
+  # F = calculateFofUBif(U, k)
+  f_closure!(F, U0) = fun!(F, U0, k)
+  j_closure!(J, U0) = jac!(J, U0, k)
+  # res = nlsolve(f_closure!, j_closure!, U0, xtol=1e-5, ftol=1e-5, method = :newton)
+  res = nlsolve(f_closure!, j_closure!, U0, method=:newton, linesearch=BackTracking(order=3))
+  U = res.zero
+  println(U)
+
+  # #Newton-Raphson
+  # nr_toll_U = 1e-5
+  # nr_toll_F = 1e-5
+  #
+  # while true
+  #   dU = J\(-F)
+  #   # U_new = U + 0.01*dU
+  #   U_new = U + dU
+  #
+  #   if any(isnan(dot(F,F)))
+  #     println(F)
+  #     @printf "error at bifurcation with vessels %s, %s, and %s \n" v1.label v2.label v3.label
+  #     break
+  #   end
+  #
+  #   u_ok = 0
+  #   f_ok = 0
+  #   for i in 1:length(dU)
+  #     if abs(dU[i]) <= nr_toll_U || abs(F[i]) <= nr_toll_F
+  #       u_ok += 1
+  #       f_ok += 1
+  #     end
+  #   end
+  #
+  #   if u_ok == length(dU) || f_ok == length(dU)
+  #     U = U_new
+  #     break
+  #   else
+  #     U = U_new
+  #     J = calculateJacobianBif(U, k)
+  #     F = calculateFofUBif(U, k)
+  #   end
+  # end
 
   #Update vessel quantities
   v1.u[end] = U[1]
@@ -163,6 +264,7 @@ function solveBifurcation(v1 :: Vessel, v2 :: Vessel, v3 :: Vessel)
   v3.c[ 1 ] = waveSpeed(v3.A[ 1 ], v3.gamma[ 1 ])
 
 end
+
 
 # *function* __`calculateWstarBif`__ $\rightarrow$
 # `W::Array{Float, 1}`
@@ -256,8 +358,9 @@ end
 # `F`         `::Array` Newton's method relations.
 # ----------------------------------------------------------------------------
 # <a name="calculateFofUBif"></a>
-function calculateFofUBif(v1 :: Vessel, v2 :: Vessel, v3 :: Vessel,
-                           U :: Array,   k :: Array,   W :: Array)
+function calculateFofUBif(U :: Array,   k :: Array)
+
+  W = calculateWstarBif(U, k)
 
   f1 = U[1] + 4*k[1]*U[4] - W[1]
 
@@ -267,11 +370,11 @@ function calculateFofUBif(v1 :: Vessel, v2 :: Vessel, v3 :: Vessel,
 
   f4 = U[1]*(U[4]*U[4]*U[4]*U[4]) - U[2]*(U[5]*U[5]*U[5]*U[5]) - U[3]*(U[6]*U[6]*U[6]*U[6])
 
-  f5 = v1.beta[end]*(U[4]*U[4]/sqrt(v1.A0[end])  - 1  ) -
-     ( v2.beta[ 1 ]*(U[5]*U[5]/sqrt(v2.A0[1]) - 1) )
+  f5 = k[7]*(U[4]*U[4]*k[4] - 1  ) -
+     ( k[8]*(U[5]*U[5]*k[5] - 1) )
 
-  f6 = v1.beta[end]*(U[4]*U[4]/sqrt(v1.A0[end])  - 1  ) -
-     ( v3.beta[ 1 ]*(U[6]*U[6]/sqrt(v3.A0[1]) - 1) )
+  f6 = k[7]*(U[4]*U[4]*k[4] - 1  ) -
+     ( k[9]*(U[6]*U[6]*k[6] - 1) )
 
   # f5 = v1.beta[end]*(U[4]*U[4]/sqrt(v1.A0[end])  - 1  ) -
   #    ( v2.beta[ 1 ]*(U[5]*U[5]/sqrt(v2.A0[1]) - 1) ) + 1060*0.5*(U[1]*U[1]-U[2]*U[2])
@@ -280,6 +383,74 @@ function calculateFofUBif(v1 :: Vessel, v2 :: Vessel, v3 :: Vessel,
   #    ( v3.beta[ 1 ]*(U[6]*U[6]/sqrt(v3.A0[1]) - 1) ) + 1060*0.5*(U[1]*U[1]-U[3]*U[3])
 
   return [f1, f2, f3, f4, f5, f6]
+end
+
+function unew(U, dU, k, f_old)
+    lambda_p = 1.0
+    while true
+        U_new = U + lambda_p*dU
+        F = calculateFofUBif(U_new, k)
+        f_new = 0.5*dot(F,F)
+
+        if f_new <= f_old
+            return lambda_p
+        else
+            lambda_p /= 2.0
+            if lambda_p < 1e-4
+                return lambda_p
+            end
+        end
+    end
+end
+
+
+
+function fun!(F, U, k)
+    W = calculateWstarBif(U, k)
+    F = zeros(6)
+
+    F[1] = U[1] + 4*k[1]*U[4] - W[1]
+
+    F[2] = U[2] - 4*k[2]*U[5] - W[2]
+
+    F[3] = U[3] - 4*k[3]*U[6] - W[3]
+
+    F[4] = U[1]*(U[4]*U[4]*U[4]*U[4]) - U[2]*(U[5]*U[5]*U[5]*U[5]) - U[3]*(U[6]*U[6]*U[6]*U[6])
+
+    F[5] = k[7]*(U[4]*U[4]*k[4] - 1) -
+          (k[8]*(U[5]*U[5]*k[5] - 1))
+
+    F[6] = k[7]*(U[4]*U[4]*k[4] - 1) -
+          (k[9]*(U[6]*U[6]*k[6] - 1))
+end
+
+function jac!(J, U, k)
+    J = eye(6)
+
+    J[1,4] =  4*k[1]
+    J[2,5] = -4*k[2]
+    J[3,6] = -4*k[3]
+
+    J[4,1] =  (U[4]*U[4]*U[4]*U[4])
+    J[4,2] = -(U[5]*U[5]*U[5]*U[5])
+    J[4,3] = -(U[6]*U[6]*U[6]*U[6])
+    J[4,4] =  4*U[1]*(U[4]*U[4]*U[4])
+    J[4,5] = -4*U[2]*(U[5]*U[5]*U[5])
+    J[4,6] = -4*U[3]*(U[6]*U[6]*U[6])
+
+    J[5,1] = 0.0
+
+    J[5,2] = 0.0
+
+    J[5,4] =  2*k[7]*U[4]*k[4]
+    J[5,5] = -2*k[8]*U[5]*k[5]
+
+    J[6,1] =  0.0
+
+    J[6,3] =  0.0
+
+    J[6,4] =  2*k[7]*U[4]*k[4]
+    J[6,6] = -2*k[9]*U[6]*k[6]
 end
 
 # *function* __`calculateJacobianBif`__ $\rightarrow$
@@ -336,8 +507,7 @@ end
 # `J`         `::Array{Float, 2}` Jacobian matrix.
 # ----------------------------------------------------------------------------
 # <a name="calculateJacobianBif"></a>
-function calculateJacobianBif(v1 :: Vessel, v2 :: Vessel, v3 :: Vessel,
-                               U :: Array,   k :: Array)
+function calculateJacobianBif(U :: Array,   k :: Array)
 
   J = eye(6)
 
@@ -352,14 +522,14 @@ function calculateJacobianBif(v1 :: Vessel, v2 :: Vessel, v3 :: Vessel,
   J[4,5] = -4*U[2]*(U[5]*U[5]*U[5])
   J[4,6] = -4*U[3]*(U[6]*U[6]*U[6])
 
-  J[5,1] =  0.
+  J[5,1] = 0.
   # J[5,1] = 1060*U[1]
 
-  J[5,2] =  0.
+  J[5,2] = 0.
   # J[5,2] = -1060*U[2]
 
-  J[5,4] =  2*v1.beta[end]*U[4]/sqrt(v1.A0[end])
-  J[5,5] = -2*v2.beta[ 1 ]*U[5]/sqrt(v2.A0[1])
+  J[5,4] =  2*k[7]*U[4]*k[4]
+  J[5,5] = -2*k[8]*U[5]*k[5]
 
   J[6,1] =  0.
   # J[6,1] = 1060*U[1]
@@ -368,8 +538,8 @@ function calculateJacobianBif(v1 :: Vessel, v2 :: Vessel, v3 :: Vessel,
   # J[6,3] = -1060U[3]
 
 
-  J[6,4] =  2*v1.beta[end]*U[4]/sqrt(v1.A0[end])
-  J[6,6] = -2*v3.beta[ 1 ]*U[6]/sqrt(v3.A0[1])
+  J[6,4] =  2*k[7]*U[4]*k[4]
+  J[6,6] = -2*k[9]*U[6]*k[6]
 
   return J
 end

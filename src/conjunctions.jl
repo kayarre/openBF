@@ -150,6 +150,7 @@ function solveConjunction(b :: Blood, v1 :: Vessel, v2 :: Vessel)
     else
       U = U_new
       W = calculateWstarConj(U, k)
+      J = calculateJacobianConj(b, v1, v2, U, k)
       F = calculateFofUconj(b, v1, v2, U, k, W)
     end
   end

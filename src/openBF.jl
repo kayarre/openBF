@@ -29,6 +29,9 @@ module openBF
 # data structures for vessels, blood, and numerical scheme
 # are specified.
 using BTypes
+using LineSearches
+
+using NLsolve
 
 # Data structures and output files are initialised at the beginning
 # of each simulation. [initialise.jl](initialise.html) contains all

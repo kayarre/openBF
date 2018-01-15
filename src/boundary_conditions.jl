@@ -247,7 +247,7 @@ function inputFromData(t :: Float64, h :: Heart)
 	#
 	# <div style="text-align:center">
 	# <img src="images/idt_array.png" width="200"></div>
-	idx = 0
+	idx = 1
 	for i in 1:length(idt)
 		if ((t >= idt[i]) && (t <= idt[i+1]))
 			idx=i
