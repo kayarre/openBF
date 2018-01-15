@@ -125,8 +125,6 @@ function solveBifurcation(v1 :: Vessel, v2 :: Vessel, v3 :: Vessel)
 
     lambda_p = unew(U, dU, k, f_old)
     U_new = U + lambda_p*dU
-    F = calculateFofUBif(U_new, k)
-    f_old = 0.5*dot(F,F)
 
     if any(isnan(dot(F,F)))
       println(F)
@@ -150,6 +148,7 @@ function solveBifurcation(v1 :: Vessel, v2 :: Vessel, v3 :: Vessel)
       U = U_new
       J = calculateJacobianBif(U, k)
       F = calculateFofUBif(U, k)
+      f_old = 0.5*dot(F,F)
     end
   end
   # println(U)
