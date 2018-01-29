@@ -203,7 +203,7 @@ function solveBifurcation_bkp(v1 :: Vessel, v2 :: Vessel, v3 :: Vessel)
   f_closure!(F, U0) = fun!(F, U0, k)
   j_closure!(J, U0) = jac!(J, U0, k)
   # res = nlsolve(f_closure!, j_closure!, U0, xtol=1e-5, ftol=1e-5, method = :newton)
-  res = nlsolve(f_closure!, j_closure!, U0, method=:newton, linesearch=BackTracking(order=3))
+  res = nlsolve(f_closure!, j_closure!, U0, method=:trust_region)#, linesearch=BackTracking(order=3))
   U = res.zero
   println(U)
 
@@ -369,17 +369,13 @@ function calculateFofUBif(U :: Array,   k :: Array)
 
   f4 = U[1]*(U[4]*U[4]*U[4]*U[4]) - U[2]*(U[5]*U[5]*U[5]*U[5]) - U[3]*(U[6]*U[6]*U[6]*U[6])
 
-  f5 = k[7]*(U[4]*U[4]*k[4] - 1  ) -
-     ( k[8]*(U[5]*U[5]*k[5] - 1) )
+  f5 = k[7]*(U[4]*U[4]*k[4] - 1  ) - ( k[8]*(U[5]*U[5]*k[5] - 1) )
 
-  f6 = k[7]*(U[4]*U[4]*k[4] - 1  ) -
-     ( k[9]*(U[6]*U[6]*k[6] - 1) )
+  f6 = k[7]*(U[4]*U[4]*k[4] - 1  ) - ( k[9]*(U[6]*U[6]*k[6] - 1) )
 
-  # f5 = v1.beta[end]*(U[4]*U[4]/sqrt(v1.A0[end])  - 1  ) -
-  #    ( v2.beta[ 1 ]*(U[5]*U[5]/sqrt(v2.A0[1]) - 1) ) + 1060*0.5*(U[1]*U[1]-U[2]*U[2])
-  #
-  # f6 = v1.beta[end]*(U[4]*U[4]/sqrt(v1.A0[end])  - 1  ) -
-  #    ( v3.beta[ 1 ]*(U[6]*U[6]/sqrt(v3.A0[1]) - 1) ) + 1060*0.5*(U[1]*U[1]-U[3]*U[3])
+  # f5 = k[7]*(U[4]*U[4]*k[4]  - 1  ) - ( k[6]*(U[5]*U[5]*k[5] - 1) ) + 1060*0.5*(U[1]*U[1]-U[2]*U[2])
+
+  # f6 = k[7]*(U[4]*U[4]*k[4]  - 1  ) - ( k[8]*(U[6]*U[6]*k[6] - 1) ) + 1060*0.5*(U[1]*U[1]-U[3]*U[3])
 
   return [f1, f2, f3, f4, f5, f6]
 end
@@ -394,7 +390,7 @@ function unew(U, dU, k, f_old)
         if f_new <= f_old
             return lambda_p
         else
-            lambda_p /= 2.0
+            lambda_p -= 0.1
             if lambda_p < 1e-4
                 return lambda_p
             end

@@ -185,7 +185,6 @@ function MUSCL(v :: Vessel, dt :: Float64, b :: Blood)
     v.Q[i] += dt*rho_inv*( -viscT*v.Q[i]*s_A_inv*s_A_inv +
                         v.A[i]*(v.beta[i]*0.5*v.dA0dx[i] -
                                 (s_A*s_A0_inv-1.)*v.dTaudx[i]))
-
     v.P[i] = pressure(v.A[i], v.A0[i], v.beta[i], v.Pext)
     v.u[i] = v.Q[i]/v.A[i]
     v.c[i] = waveSpeed(v.A[i], v.gamma[i])

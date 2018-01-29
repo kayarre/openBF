@@ -80,6 +80,10 @@ $ source ~/.bashrc
 
 - Download and install Julia 64-bit version from [here](https://julialang.org/downloads/)
 - [Add Julia to your system path](http://wallyxie.com/weblog/adding-julia-windows-path-command-prompt/). Now you are able to run Julia by typing `julia` in a command prompt
+- Open up a command prompt and run
+```bash
+> julia -e 'Pkg.init()'
+```
 - Download openBF from this repository
 - Copy openBF folder in `C:\Users\<username>\.julia\`
 - Create the directory `C:\Users\<username>\.julia\BTypes\src` and copy `openBF\src\BTypes.jl` in it
