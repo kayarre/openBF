@@ -15,7 +15,7 @@ This is a string that will be used to name the results folder. At the end of the
 inlet_file: "my_inlet.dat"
 ```
 
-The inlet BC is given trough an ASCII file containing a list of values (pressure or volumetric flow rate) in time. For now, the inlet vessel is the one whose `sn` node is `1`.
+The inlet BC is given trough an ASCII file containing a list of values (volumetric flow rate) in time. For now, the inlet vessel is the one whose `sn` node is `1`.
 
 ```yaml
 output_directory: "put/results/in/this/directory/please"
